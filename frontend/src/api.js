@@ -94,12 +94,11 @@ export const bookingApi = {
     ),
   create: (body) =>
     request("booking", "/api/bookings", { method: "POST", body }),
-  mine: (userId) =>
-    request("booking", `/api/bookings/users/${encodeURIComponent(userId)}`),
-  cancel: (id, userId) =>
+  mine: () => request("booking", "/api/bookings/me"),
+  cancel: (id) =>
     request(
       "booking",
-      `/api/bookings/${encodeURIComponent(id)}?userId=${encodeURIComponent(userId)}`,
+      `/api/bookings/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     ),
 };

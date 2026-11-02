@@ -313,7 +313,11 @@ function Auth({ register, user, onLogin }) {
         );
       }
     } catch (err) {
-      setError(err.message);
+      setError(
+        !register && err.status === 401
+          ? "Email or password is incorrect. Please try again."
+          : err.message,
+      );
     } finally {
       setBusy(false);
     }
@@ -459,7 +463,7 @@ function Details() {
     </State>
   );
 }
-function Seats({ user }) {
+function Seats() {
   const { id } = useParams(),
     navigate = useNavigate();
   const state = useLoad(async () => {
@@ -484,7 +488,6 @@ function Seats({ user }) {
       if (!bookable(data.show))
         throw new Error("This showtime is no longer available for booking.");
       const booking = await bookingApi.create({
-        userId: user.sub,
         showtimeId: id,
         seatNumbers: selected,
       });
@@ -718,7 +721,7 @@ function Confirmation() {
 }
 function MyBookings({ user }) {
   const state = useLoad(async () => {
-    const bookings = await bookingApi.mine(user.sub);
+    const bookings = await bookingApi.mine();
     return Promise.all(
       bookings.map(async (b) => {
         try {
@@ -745,7 +748,7 @@ function MyBookings({ user }) {
     setError("");
     setMessage("");
     try {
-      await bookingApi.cancel(id, user.sub);
+      await bookingApi.cancel(id);
       setMessage("Booking cancelled. Your seats have been released.");
       setCancelId("");
       state.reload();
@@ -962,7 +965,7 @@ function Shell() {
             path="/showtimes/:id/seats"
             element={
               <Guard user={user}>
-                <Seats key={location.pathname} user={user} />
+                <Seats key={location.pathname} />
               </Guard>
             }
           />

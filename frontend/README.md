@@ -42,12 +42,12 @@ Screen: GET/POST /api/screens; GET/PUT/DELETE /api/screens/{id}. Request: `{name
 
 Showtime: GET/POST /api/showtimes; GET/PUT/DELETE /api/showtimes/{id}; GET /api/showtimes/movie/{movieId}. Request: `{movieId,screenId,startsAt,price}`. Only future SCHEDULED showtimes with positive price can be booked.
 
-Booking: GET /api/bookings/showtimes/{showtimeId}/seats returns `{seatNumber,status}[]`; POST /api/bookings accepts `{userId,showtimeId,seatNumbers}`; GET /api/bookings/users/{userId}; DELETE /api/bookings/{bookingId}?userId={userId}. Amount and confirmation status come from the server.
+Booking: GET /api/bookings/showtimes/{showtimeId}/seats returns `{seatNumber,status}[]`; POST /api/bookings accepts `{showtimeId,seatNumbers}`; GET /api/bookings/me returns the signed-in user's bookings; DELETE /api/bookings/{bookingId} cancels a booking owned by the signed-in user. Amount and confirmation status come from the server.
 
 ## Backend limitations and verification
 
 No all-bookings admin endpoint exists, so no admin booking list is fabricated. Search/genre filtering is local because no corresponding query endpoints exist. Currency is not specified in backend DTOs, so amounts are displayed without an invented currency.
 
-Booking Service currently trusts userId from the request and does not enforce JWT ownership. The frontend derives userId exclusively from the signed-in session and provides no way to select another user, but backend authorization must be completed by the backend team. Movie Service does enforce ADMIN permissions in SecurityConfig.
+Booking Service derives booking ownership from the authenticated JWT subject. Movie Service enforces ADMIN permissions in SecurityConfig.
 
 Production build and ESLint passed during implementation. Local HTTP probes to ports 8081, 8082, and 8083 did not respond, so a live end-to-end reservation could not be verified. Start the existing services and verify registration → login → film → showtime → seats → review → confirmation. Verify a competing booking returns a conflict and refreshes availability. There are no mock API responses or hardcoded credentials.
