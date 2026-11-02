@@ -1,6 +1,7 @@
 package com.moviereservation.auth.Service;
 
 import com.moviereservation.auth.DTO.RegisterRequest;
+import com.moviereservation.auth.DTO.RegisterResponse;
 import com.moviereservation.auth.Enum.Role;
 import com.moviereservation.auth.Exception.InformationExistException;
 import com.moviereservation.auth.Model.User;
@@ -20,7 +21,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
 
-    public User register(RegisterRequest request){
+    public RegisterResponse register(RegisterRequest request){
         //if email already exists throw an exception
         if(userRepository.existsByEmail(request.getEmail())){
             throw new InformationExistException("user with email address " + request.getEmail() + " already exists");
@@ -36,8 +37,14 @@ public class AuthService {
         //encoded password
         userObject.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        //save and return User
-        return userRepository.save(userObject);
+        //save User
+        userRepository.save(userObject);
+
+        //create RegisterResponse
+        RegisterResponse registerResponse = new RegisterResponse("Registration successful.");
+
+        //return RegisterResponse
+        return registerResponse;
     }
 
 }
