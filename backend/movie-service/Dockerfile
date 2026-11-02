@@ -1,0 +1,20 @@
+FROM maven:3.9-eclipse-temurin-17 AS build
+
+WORKDIR /app
+
+COPY pom.xml ./
+RUN mvn -B -ntp dependency:go-offline
+
+COPY src ./src
+RUN mvn -B -ntp -DskipTests package
+
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+COPY --from=build --chown=10001:10001 /app/target/movie-service-*.jar /app/movie-service.jar
+
+USER 10001
+EXPOSE 8082
+
+ENTRYPOINT ["java", "-jar", "/app/movie-service.jar"]

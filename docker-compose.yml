@@ -1,0 +1,65 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "127.0.0.1:27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: >-
+        mongosh --quiet --eval 'try { rs.status(); } catch (e) {
+          rs.initiate({_id: "rs0", members: [{_id: 0, host: "mongodb:27017"}]});
+        }
+        if (!db.hello().isWritablePrimary) quit(1);'
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 15s
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/auth-service/.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  movie-service:
+    build:
+      context: ./backend/movie-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/movie-service/.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+    environment:
+      BOOKING_SERVICE_BASE_URL: http://booking-service:8083
+    restart: unless-stopped
+
+  booking-service:
+    build:
+      context: ./backend/booking-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/booking-service/.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    environment:
+      MOVIE_SERVICE_BASE_URL: http://movie-service:8082
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
