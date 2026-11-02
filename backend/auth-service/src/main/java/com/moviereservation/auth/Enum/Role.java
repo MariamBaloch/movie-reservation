@@ -1,4 +1,5 @@
 package com.moviereservation.auth.Enum;
 
-public class Role {
+public enum  Role {
+    USER, ADMIN
 }
