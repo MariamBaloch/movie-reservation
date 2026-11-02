@@ -36,7 +36,7 @@ public class BookingService {
     private final MovieServiceClient movieServiceClient;
 
     @Transactional
-    public BookingResponse createBooking(BookingRequest request) {
+    public BookingResponse createBooking(BookingRequest request, String userId) {
 
         List<String> seatNumbers = request.getSeatNumbers().stream().map(String::trim).map(String::toUpperCase).toList();
 
@@ -50,7 +50,7 @@ public class BookingService {
         BigDecimal totalAmount = showtime.price().multiply(BigDecimal.valueOf(seatNumbers.size()));
 
         Booking booking = Booking.builder()
-                .userId(request.getUserId())
+                .userId(userId)
                 .showtimeId(showtime.id())
                 .seatNumbers(seatNumbers)
                 .totalAmount(totalAmount)

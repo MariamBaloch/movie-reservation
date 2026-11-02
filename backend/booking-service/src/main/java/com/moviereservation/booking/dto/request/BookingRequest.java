@@ -12,10 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 public class BookingRequest {
 
-    // TODO remove once auth service is implemented and userId can be extracted from the JWT token
-    @NotBlank
-    private String userId;
-
     @NotBlank
     private String showtimeId;
 

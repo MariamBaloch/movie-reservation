@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -21,14 +23,15 @@ public class BookingController {
     @PostMapping
     @PreAuthorize("hasRole('USER')")
     @ResponseStatus(HttpStatus.CREATED)
-    public BookingResponse createBooking(@Valid @RequestBody BookingRequest request) {
-        return bookingService.createBooking(request);
+    public BookingResponse createBooking(@Valid @RequestBody BookingRequest request,
+                                         @AuthenticationPrincipal Jwt jwt) {
+        return bookingService.createBooking(request, jwt.getSubject());
     }
 
-    @GetMapping("/users/{userId}")
+    @GetMapping("/me")
     @PreAuthorize("hasRole('USER')")
-    public List<BookingResponse> getBookingsByUserId(@PathVariable String userId) {
-        return bookingService.getBookingsByUserId(userId);
+    public List<BookingResponse> getMyBookings(@AuthenticationPrincipal Jwt jwt) {
+        return bookingService.getBookingsByUserId(jwt.getSubject());
     }
 
     @GetMapping("/showtimes/{showtimeId}/seats")
@@ -39,7 +42,8 @@ public class BookingController {
 
     @DeleteMapping("/{bookingId}")
     @PreAuthorize("hasRole('USER')")
-    public BookingResponse cancelBooking(@PathVariable String bookingId, @RequestParam String userId) {
-        return bookingService.cancelBooking(bookingId, userId);
+    public BookingResponse cancelBooking(@PathVariable String bookingId,
+                                         @AuthenticationPrincipal Jwt jwt) {
+        return bookingService.cancelBooking(bookingId, jwt.getSubject());
     }
 }
