@@ -54,7 +54,7 @@ export async function request(
     data = raw;
   }
   if (!response.ok) {
-    if (response.status === 401 && token) {
+    if (response.status === 401 && token && service === "auth") {
       localStorage.removeItem("cinebook-token");
       window.dispatchEvent(new Event("cinebook-expired"));
     }
@@ -74,17 +74,26 @@ export async function request(
   return data;
 }
 export const movieApi = {
-  movies: () => request("movie", "/api/movies"),
-  movie: (id) => request("movie", `/api/movies/${encodeURIComponent(id)}`),
+  movies: () => request("movie", "/api/movies", { auth: false }),
+  movie: (id) =>
+    request("movie", `/api/movies/${encodeURIComponent(id)}`, {
+      auth: false,
+    }),
   showtimes: (id) =>
     request(
       "movie",
       `/api/showtimes${id ? `/movie/${encodeURIComponent(id)}` : ""}`,
+      { auth: false },
     ),
   showtime: (id) =>
-    request("movie", `/api/showtimes/${encodeURIComponent(id)}`),
-  screen: (id) => request("movie", `/api/screens/${encodeURIComponent(id)}`),
-  screens: () => request("movie", "/api/screens"),
+    request("movie", `/api/showtimes/${encodeURIComponent(id)}`, {
+      auth: false,
+    }),
+  screen: (id) =>
+    request("movie", `/api/screens/${encodeURIComponent(id)}`, {
+      auth: false,
+    }),
+  screens: () => request("movie", "/api/screens", { auth: false }),
 };
 export const bookingApi = {
   seats: (id) =>
