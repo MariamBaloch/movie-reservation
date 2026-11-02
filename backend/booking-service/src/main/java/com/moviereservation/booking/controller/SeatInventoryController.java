@@ -6,6 +6,7 @@ import com.moviereservation.booking.service.SeatInventoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class SeatInventoryController {
     private final SeatInventoryService seatInventoryService;
 
     @PostMapping("/{showtimeId}/seats")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public List<SeatResponse> initializeSeats(@PathVariable String showtimeId, @Valid @RequestBody SeatInitializationRequest request) {
         return seatInventoryService.initializeSeats(showtimeId, request);

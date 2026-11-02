@@ -36,6 +36,7 @@ services:
       context: ./backend/movie-service
       dockerfile: Dockerfile
     env_file:
+      - ./backend/auth-service/.env
       - ./backend/movie-service/.env
     depends_on:
       mongodb:
@@ -51,6 +52,7 @@ services:
       context: ./backend/booking-service
       dockerfile: Dockerfile
     env_file:
+      - ./backend/auth-service/.env
       - ./backend/booking-service/.env
     depends_on:
       mongodb:
