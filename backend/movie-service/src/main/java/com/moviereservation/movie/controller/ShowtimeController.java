@@ -38,12 +38,12 @@ public class ShowtimeController {
     public List<ShowtimeResponse> getByMovieId(@PathVariable String movieId) {
         return showtimeService.getByMovieId(movieId);
     }
-
+    //@PreAuthorize("hasRole('Admin')")
     @PutMapping("{id}")
     public ShowtimeResponse updateShowtime(@PathVariable String id,@Valid @RequestBody ShowtimeRequest request) {
         return showtimeService.updateShowtime(id, request);
     }
-
+    //@PreAuthorize("hasRole('Admin')")
     @DeleteMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteShowtime(@PathVariable String id) {
