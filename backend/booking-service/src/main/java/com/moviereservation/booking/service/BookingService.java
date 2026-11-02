@@ -84,14 +84,7 @@ public class BookingService {
     }
 
     public List<SeatResponse> getSeats(String showtimeId) {
-
-        ShowtimeResponse showtime = movieServiceClient.getShowtime(showtimeId);
-        validateShowtime(showtime, showtimeId);
-
-        return seatRepository.findAllByShowtimeIdOrderBySeatNumberAsc(showtimeId)
-                .stream()
-                .map(seatMapper::toResponse)
-                .toList();
+        return seatRepository.findAllByShowtimeIdOrderBySeatNumberAsc(showtimeId).stream().map(seatMapper::toResponse).toList();
     }
 
     @Transactional
