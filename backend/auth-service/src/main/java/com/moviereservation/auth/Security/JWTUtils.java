@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.logging.Level;
 
 @Service
 public class JWTUtils {
@@ -32,7 +31,7 @@ public class JWTUtils {
                 .claim("role", userDetails.getRole())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(getKey())
+                .signWith(getKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
