@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collation = "screens")
+@Document(collection = "screens")
 @Data
 public class Screen {
     @Id
@@ -12,5 +12,5 @@ public class Screen {
     private String name;
     private int rows;
     private int seatPerRow;
-    private boolean active;
+    private boolean active = true;
 }
