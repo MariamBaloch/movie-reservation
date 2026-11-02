@@ -22,10 +22,10 @@ MovieReservation addresses this problem through concurrency control, locking mec
 
 | Team Member | Responsibilities |
 |-------------|------------------|
-| [@shaikhahsn22-png] | Authentication Service, Login and Registration |
-| [@Israa-Husain] | Movie and Screen Management |
-| [@ftmaalt] | Showtime Management, Seat Generation, Showtime UI |
-| [@MariamBaloch] | Booking Service, Reservations, Concurrency |
+| Shaika Mohamed | Authentication Service, Login and Registration |
+| IsraaHusain | Movie and Screen Management |
+| Fatima Abdulla | Showtime Management, Seat Generation, Showtime UI |
+| Mariam Baloch | Booking Service, Reservations, Concurrency |
 
 ## Technologies Used
 
