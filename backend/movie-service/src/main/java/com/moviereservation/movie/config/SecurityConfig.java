@@ -3,27 +3,26 @@ package com.moviereservation.movie.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-public class SecurityConfig {
+//Enables @PreAuthorize annotations in your controllers.
+@EnableMethodSecurity
+public class SecurityConfig{
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
-
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/showtimes/**")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/showtimes")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/showtimes/**")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/showtimes/**")
-                        .permitAll()
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth->auth
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/movies","/api/movies/*","/api/screens","/api/screens/*").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/movies","/api/screens").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,"/api/movies/*","/api/screens/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE,"/api/movies/*","/api/screens/*").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
 
