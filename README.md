@@ -1,231 +1,186 @@
-# MovieReservation
+# MovieReservation — Movie Seat Reservation System
 
-## Project Overview
+A full-stack movie seat reservation project built for the General Assembly Java Development Bootcamp one-day microservices hackathon.
 
-MovieReservation is a full-stack cinema seat reservation platform developed as part of the General Assembly Java Development Bootcamp Hackathon.
+## Overview
 
-The application allows users to browse movies, view available showtimes, select cinema seats, and make reservations.
+MovieReservation separates user authentication, cinema scheduling, and seat booking into three Spring Boot services. Users can register, log in, browse movie information and showtimes, and reserve seats. The backend protects seat inventory from competing reservations with atomic MongoDB updates, a unique seat index, and transactions.
 
-The system uses Microservices Architecture to separate authentication, movie management, and booking operations into independent Spring Boot applications.
+**Current repository state:** The backend controllers, models, repositories, and inter-service clients are implemented. Dockerfiles and Compose are included. The React frontend currently contains the default Vite starter screen; production-ready booking pages and a complete end-to-end demonstration are still to be completed/verified.
 
-A key feature of the project is preventing double bookings when multiple users attempt to reserve the same seat simultaneously.
+## Problem statement
 
-## Problem Statement
+Cinema customers may try to book the same seat simultaneously. A read-then-write implementation could sell one seat twice. This project uses a seat-level conditional update (`AVAILABLE` → `BOOKED`) and database uniqueness constraints so only one competing request can claim a seat.
 
-Cinema reservation systems must manage seat availability accurately, especially when multiple customers attempt to reserve seats at the same time.
+## Team
 
-Without proper concurrency control, multiple users could reserve the same seat, resulting in inconsistent booking records.
+| Member | Area |
+| --- | --- |
+| Shaika Mohamed | Authentication, registration and login |
+| Israa Husain | Movies and cinema screens |
+| Fatima Abdulla | Showtimes, seat-number generation, Showtime integration |
+| Mariam Baloch | Bookings, seat inventory, concurrency control |
 
-MovieReservation addresses this problem through concurrency control, locking mechanisms, and MongoDB atomic operations.
+## Technology stack
 
-## Team Members
+- **Backend:** Java 17, Spring Boot 4.1.2, Spring Security, Spring Data MongoDB, Maven, Lombok, MapStruct, REST APIs
+- **Authentication:** JWT, role-based access control (`USER`, `ADMIN`)
+- **Database:** MongoDB 8.0 locally through Docker Compose, or MongoDB Atlas through connection strings
+- **Frontend:** React, Vite, JavaScript (UI still in progress)
+- **Tooling:** Docker, Docker Compose, Git, GitHub, Postman
 
-| Team Member | Responsibilities |
-|-------------|------------------|
-| Shaika Mohamed | Authentication Service, Login and Registration |
-| IsraaHusain | Movie and Screen Management |
-| Fatima Abdulla | Showtime Management, Seat Generation, Showtime UI |
-| Mariam Baloch | Booking Service, Reservations, Concurrency |
+## Microservices architecture
 
-## Technologies Used
-
-### Backend
-- Java 17
-- Spring Boot 4.1.2
-- Spring Security
-- Spring Data MongoDB
-- REST APIs
-- Lombok
-- MapStruct
-- Maven
-
-### Frontend
-- React
-- Vite
-- JavaScript
-
-### Database
-- MongoDB Atlas
-
-### DevOps and Collaboration
-- Docker
-- Docker Compose
-- Git
-- GitHub
-- Postman
-
-## Microservices Architecture
-
-The application consists of three independent microservices.
-
-### 1. Authentication Service
-
-Port: 8081
-
-Responsibilities:
-- User registration
-- User login
-- JWT authentication
-- Role-based authorization
-- User management
-
-Database: `moviereserve_auth`
-
-### 2. Movie Service
-
-Port: 8082
-
-Responsibilities:
-- Movie management
-- Screen management
-- Showtime management
-- Ticket pricing
-- Showtime scheduling
-- Seat-number generation
-
-Database: `moviereserve_movies`
-
-### 3. Booking Service
-
-Port: 8083
-
-Responsibilities:
-- Booking creation
-- Booking cancellation
-- Seat inventory management
-- Seat availability
-- Concurrency control
-- Double-booking prevention
-
-Database: `moviereserve_bookings`
-
-## Architecture Diagram
+| Service | Port | Database | Responsibilities |
+| --- | --- | --- | --- |
+| Auth Service | `8081` | `moviereserve_auth` | Register users, authenticate credentials, issue JWTs, user identity |
+| Movie Service | `8082` | `moviereserve_movies` | Movie and screen CRUD, showtime scheduling and ticket prices, generate seat numbers |
+| Booking Service | `8083` | `moviereserve_bookings` | Initialize seat inventory, reserve/cancel bookings, seat availability and concurrency protection |
 
 ```mermaid
 flowchart TD
-    A[React Frontend] --> B[Auth Service]
-    A --> C[Movie Service]
-    A --> D[Booking Service]
-
-    B --> E[(Auth Database)]
-    C --> F[(Movie Database)]
-    D --> G[(Booking Database)]
-
-    C -->|Initialize Seats| D
-    D -->|Get Showtime Details| C
+    UI["React frontend (in progress)"] --> AUTH["Auth Service :8081"]
+    UI --> MOVIE["Movie Service :8082"]
+    UI --> BOOK["Booking Service :8083"]
+    MOVIE -->|"Initialize showtime seats"| BOOK
+    BOOK -->|"Fetch showtime details"| MOVIE
+    AUTH --> DA[(Auth database)]
+    MOVIE --> DM[(Movie database)]
+    BOOK --> DB[(Booking database)]
 ```
 
-## Project Structure
+Each service owns its own collections; cross-service references use IDs and REST calls rather than foreign keys across databases.
+
+## Database design
+
+| Database | Collection | Main fields |
+| --- | --- | --- |
+| Auth | `users` | `id`, `name`, `email`, encoded `password`, `role` |
+| Movie | `movies` | `id`, `title`, `description`, `duration`, `posterUrl`, `genres`, `active` |
+| Movie | `screens` | `id`, `name`, `rows`, `seatPerRow`, `active` |
+| Movie | `showtimes` | `id`, `movieId`, `screenId`, `startsAt`, `price`, `status`, `createdAt`, `updatedAt` |
+| Booking | `seats` | `id`, `showtimeId`, `seatNumber`, `status`, `bookingId` |
+| Booking | `bookings` | `id`, `userId`, `showtimeId`, `seatNumbers`, `totalAmount`, `status`, `createdAt` |
+
+`movieId`, `screenId`, `showtimeId`, and `userId` are references by ID. A unique compound MongoDB index protects `(showtimeId, seatNumber)`. The Booking model also declares a partial unique index for confirmed bookings over `(showtimeId, seatNumbers)`.
+
+Showtime statuses in the backend are `PENDING`, `SCHEDULED`, `CANCELLED`, and `COMPLETED`. Seat statuses include `AVAILABLE` and `BOOKED`. A showtime's `startsAt` stores its date and time together.
+
+## API endpoints
+
+### Auth Service — `http://localhost:8081`
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| POST | `/auth/register` | Register a user |
+| POST | `/auth/login` | Log in and receive JWT |
+| GET | `/auth/me` | Return authenticated identity |
+
+### Movie Service — `http://localhost:8082`
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/movies` | List active movies |
+| GET | `/api/movies/{id}` | Get active movie |
+| POST | `/api/movies` | Create movie (ADMIN) |
+| PUT | `/api/movies/{id}` | Update movie (ADMIN) |
+| DELETE | `/api/movies/{id}` | Soft-delete movie (ADMIN) |
+| GET | `/api/screens` | List active screens |
+| GET | `/api/screens/{id}` | Get active screen |
+| POST | `/api/screens` | Create screen (ADMIN) |
+| PUT | `/api/screens/{id}` | Update screen (ADMIN) |
+| DELETE | `/api/screens/{id}` | Soft-delete screen (ADMIN) |
+| GET | `/api/showtimes` | List showtimes |
+| GET | `/api/showtimes/{id}` | Get a showtime |
+| GET | `/api/showtimes/movie/{movieId}` | Get showtimes for a movie |
+| POST | `/api/showtimes` | Create showtime and request seat initialization (ADMIN) |
+| PUT | `/api/showtimes/{id}` | Update showtime (ADMIN) |
+| DELETE | `/api/showtimes/{id}` | Delete showtime (ADMIN) |
+
+Example showtime creation request:
+
+```json
+{
+  "movieId": "movie-id",
+  "screenId": "screen-id",
+  "startsAt": "2026-11-10T19:30:00",
+  "price": 4.000
+}
+```
+
+### Booking Service — `http://localhost:8083`
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| POST | `/api/bookings` | Reserve seats |
+| GET | `/api/bookings/users/{userId}` | List a user's bookings |
+| GET | `/api/bookings/showtimes/{showtimeId}/seats` | List seats for a showtime |
+| DELETE | `/api/bookings/{bookingId}?userId={userId}` | Cancel a booking |
+| POST | `/api/showtimes/{showtimeId}/seats` | Initialize showtime seat inventory (service-to-service) |
+
+Example booking request (current API accepts `userId` from the body):
+
+```json
+{
+  "userId": "user-id",
+  "showtimeId": "showtime-id",
+  "seatNumbers": ["A1", "A2"]
+}
+```
+
+Example seat initialization request:
+
+```json
+{"seatNumbers": ["A1", "A2", "A3", "B1", "B2", "B3"]}
+```
+
+## Booking and concurrency design
+
+1. An administrator creates a showtime referencing an active movie and screen.
+2. Movie Service generates seat identifiers such as `A1`, `A2`, `B1` from the screen layout.
+3. Showtime starts in `PENDING`. Movie Service calls Booking Service to initialize the seats. On successful initialization, Showtime changes to `SCHEDULED`.
+4. Booking Service fetches the showtime from Movie Service, checks that it is scheduled and has not started, and calculates the total price.
+5. For each requested seat, Booking Service performs an atomic conditional MongoDB update only if the seat is currently `AVAILABLE`.
+6. If a concurrent request loses the race, it receives `409 Conflict`. Booking creation and seat updates are wrapped in a MongoDB transaction so a failed multi-seat booking can roll back together.
+7. Cancellation changes a confirmed booking to cancelled and releases its seats, provided the showtime has not started.
+
+The `SeatRepository` uses conditional `@Query`/`@Update` operations; the `Seat` model declares a compound unique index. The Booking Service configures a `MongoTransactionManager`. **There is no explicit Java `ReentrantLock` or `ExecutorService` implementation in this ZIP**; if the hackathon rubric requires those specifically, add and demonstrate them separately.
+
+## Security
+
+- Auth Service hashes passwords and issues signed JWTs after successful login.
+- New registrations receive `USER` role by default. ADMIN users must be provisioned securely.
+- Movie Service validates Bearer JWTs using the shared `JWT_SECRET` and restricts movie/screen/showtime mutations to `ADMIN`.
+- Movie, screen, and showtime GET endpoints are public.
+- **Integration still to verify:** Booking Service currently accepts `userId` in request parameters/body and does not show equivalent JWT enforcement. Do not treat its user-specific endpoints as securely authorized until implemented.
+- Do not commit database credentials, JWT secrets, or `.env` files.
+
+## Project structure
 
 ```text
 MovieReservation/
-│
 ├── backend/
-│   ├── auth-service/
-│   ├── booking-service/
-│   └── movie-service/
-│
-├── frontend/
-│
-├── docs/
-│   ├── showtime-service.md
-│   ├── database-design.md
-│   └── api-documentation.md
-│
+│   ├── auth-service/       # JWT authentication, users
+│   ├── movie-service/      # movies, screens, showtimes
+│   └── booking-service/    # bookings, seats, concurrency
+├── frontend/               # React + Vite starter; UI in progress
 ├── docker-compose.yml
+├── .env.example
 └── README.md
 ```
 
+Each backend service contains its own `pom.xml`, `Dockerfile`, and layered Spring Boot packages (controller, service, repository, model, DTOs, and relevant configuration).
 
-## Database Architecture
+## Running locally with IntelliJ
 
-The application uses MongoDB Atlas as its primary database.
+Prerequisites: Java 17, Docker Desktop or a reachable MongoDB Atlas cluster, and Node.js/npm for the frontend.
 
-Each microservice owns a separate logical database within
-the same MongoDB Atlas cluster.
-
-| Microservice | Database |
-|--------------|----------|
-| Auth Service | moviereserve_auth |
-| Movie Service | moviereserve_movies |
-| Booking Service | moviereserve_bookings |
-
-Microservices communicate through REST APIs rather than accessing
-each other's databases directly.
-
-## Installation and Setup
-
-### Prerequisites
-
-- Java 17
-- Maven
-- Node.js and npm
-- MongoDB Atlas account
-- Git
-- Docker Desktop (for containerized execution)
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/MariamBaloch/movie-reservation.git
-cd MovieReservation
-```
-
-### 2. Configure MongoDB Atlas
-
-1. Create a MongoDB Atlas cluster.
-2. Create database users.
-3. Configure network access.
-4. Obtain the MongoDB connection strings.
-5. Set the appropriate environment variables.
-
-### 3. Configure Environment Variables
-
-Each Spring Boot microservice requires its own MongoDB connection.
-
-For Spring Boot 4:
-
-```properties
-spring.mongodb.uri=${MONGODB_URI}
-```
-
-Configure `MONGODB_URI` in the IDE or runtime environment.
-
-Example format:
-
-```text
-mongodb+srv://USERNAME:PASSWORD@CLUSTER.mongodb.net/DATABASE
-```
-
-Do not commit database credentials to GitHub.
-
-Additional authentication and inter-service environment variables
-will be documented during integration.
-
-### 4. Run Backend Services
-
-Run each Spring Boot application separately.
-
-| Service | Port |
-|---------|------|
-| Auth Service | 8081 |
-| Movie Service | 8082 |
-| Booking Service | 8083 |
-
-For example:
-
-```bash
-cd backend/movie-service
-./mvnw spring-boot:run
-```
-
-On Windows:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-### 5. Run Frontend
+1. Clone the repository and open `MovieReservation` in IntelliJ.
+2. Start MongoDB locally (see Docker section), or prepare Atlas URIs.
+3. Create individual IntelliJ run configurations for `AuthServiceApplication`, `MovieServiceApplication`, and `BookingServiceApplication`.
+4. Give each configuration its own `MONGODB_URI`. Both Auth and Movie Services also require the same `JWT_SECRET`.
+5. Start services on ports `8081`, `8082`, and `8083`, respectively.
+6. Start the frontend:
 
 ```bash
 cd frontend
@@ -233,111 +188,130 @@ npm install
 npm run dev
 ```
 
-Open the local URL displayed by Vite.
+The current frontend displays the Vite starter; it does not yet expose the complete user journey.
 
-## Docker Setup
+## Docker Compose setup (local MongoDB)
 
-TODO: Add the finalized Docker Compose instructions once
-container integration is complete.
+The current `docker-compose.yml` builds **three backend services** and starts **MongoDB 8.0** as a single-node replica set. MongoDB is published to the host at `127.0.0.1:27018`; containers connect to it at `mongodb:27017`. Data is kept in the named `mongodb_data` volume. The frontend is **not** currently included in Compose.
 
-Planned services:
-- auth-service
-- movie-service
-- booking-service
-- frontend
+Compose uses these per-service files (they are not committed and must be created on each machine):
 
-MongoDB Atlas is hosted remotely and does not require a local
-MongoDB container.
+**`backend/auth-service/.env`**
 
-## API Documentation
+```dotenv
+MONGODB_URI=mongodb://mongodb:27017/moviereserve_auth?replicaSet=rs0
+JWT_SECRET=replace_with_a_secure_shared_secret_of_32_to_63_bytes
+```
 
-### Authentication Service
+**`backend/movie-service/.env`**
 
-TODO: Add verified authentication endpoints.
+```dotenv
+MONGODB_URI=mongodb://mongodb:27017/moviereserve_movies?replicaSet=rs0
+JWT_SECRET=replace_with_the_exact_same_shared_secret
+BOOKING_SERVICE_URL=http://booking-service:8083
+```
 
-### Movie Service
+**`backend/booking-service/.env`**
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/showtimes | Retrieve all showtimes |
-| GET | /api/showtimes/{id} | Retrieve showtime details |
-| GET | /api/showtimes/movie/{movieId} | Showtimes for a movie |
-| POST | /api/showtimes | Create a showtime |
-| PUT | /api/showtimes/{id} | Update a showtime |
-| DELETE | /api/showtimes/{id} | Delete a showtime |
+```dotenv
+MONGODB_URI=mongodb://mongodb:27017/moviereserve_bookings?replicaSet=rs0
+MOVIE_SERVICE_BASE_URL=http://movie-service:8082
+```
 
-Additional movie and screen endpoints will be documented
-by their feature owners.
+Run from the repository root:
 
-### Booking Service
+```bash
+docker compose up --build -d
+docker compose ps
+docker compose logs -f auth-service
+```
 
-TODO: Add verified booking and seat endpoints.
+To stop containers without removing the database volume:
 
-## Concurrency and Multithreading
+```bash
+docker compose down
+```
 
-The application demonstrates concurrency through simultaneous
-seat reservation requests.
+**Configuration issue to resolve:** the current Compose file sets `BOOKING_SERVICE_BASE_URL` for Movie Service, but its `application.properties` reads `BOOKING_SERVICE_URL`. Set `BOOKING_SERVICE_URL=http://booking-service:8083` in Movie Service's `.env` (as above) or correct the Compose variable; otherwise it falls back to `localhost:8083` inside the container and inter-service calls fail. The root `.env.example` is informational and is **not** automatically mapped into those three `env_file` paths.
 
-### Problem
+## MongoDB Atlas alternative
 
-Multiple users may attempt to reserve the same seat for the same
-showtime at the same time.
+MongoDB Atlas can replace the local database container when you use Atlas connection strings in each microservice's `MONGODB_URI`. Create database users and allow the development machine/network in Atlas Network Access. Keep the same logical database separation. Atlas handles replica sets; do not append the local `replicaSet=rs0` setting to Atlas SRV URIs. The current Compose file still starts its local MongoDB container unless modified.
 
-### Expected Behavior
+## Entity Relationship Diagram
 
-- One user successfully reserves the seat.
-- Competing requests receive a conflict response.
-- The seat cannot be reserved twice.
-- The database remains consistent.
+```mermaid
+erDiagram
+    USERS {
+        string id PK
+        string name
+        string email
+        string password "Encoded password"
+        string role "USER or ADMIN"
+    }
 
-### Implementation
+    MOVIES {
+        string id PK
+        string title
+        string description
+        int duration
+        string posterUrl
+        string[] genres
+        boolean active
+    }
 
-TODO: Document the final locking mechanism, MongoDB atomic
-operations, ExecutorService implementation, and test results.
+    SCREENS {
+        string id PK
+        string name
+        int rows
+        int seatPerRow
+        boolean active
+    }
 
-## Security
+    SHOWTIMES {
+        string id PK
+        string movieId "Movie reference"
+        string screenId "Screen reference"
+        datetime startsAt
+        decimal price
+        string status "PENDING, SCHEDULED, CANCELLED, COMPLETED"
+        datetime createdAt
+        datetime updatedAt
+    }
 
-The final application will use:
+    SEATS {
+        string id PK
+        string showtimeId "Showtime reference"
+        string seatNumber
+        string status "AVAILABLE or BOOKED"
+        string bookingId "Optional booking reference"
+    }
 
-- JWT Authentication
-- Protected REST endpoints
-- Role-based authorization
-- Secure password storage
-- Environment variables for sensitive configuration
+    BOOKINGS {
+        string id PK
+        string userId "User reference"
+        string showtimeId "Showtime reference"
+        string[] seatNumbers
+        decimal totalAmount
+        string status
+        datetime createdAt
+    }
 
-Temporary development-only security settings must be removed
-before the final demonstration.
+    USERS ||..o{ BOOKINGS : makes
+    MOVIES ||..o{ SHOWTIMES : has
+    SCREENS ||..o{ SHOWTIMES : hosts
+    SHOWTIMES ||..o{ SEATS : contains
+    SHOWTIMES ||..o{ BOOKINGS : receives
+    BOOKINGS o|..|{ SEATS : reserves
+```
 
-## Screenshots
+**Database ownership:**
 
-TODO: Add screenshots after frontend integration.
+- **Auth Service:** `users`
+- **Movie Service:** `movies`, `screens`, `showtimes`
+- **Booking Service:** `seats`, `bookings`
 
-Suggested screenshots:
+Relationships represent logical ID references in MongoDB, rather than database-enforced foreign keys. Each seat is unique within a showtime through the compound index `(showtimeId, seatNumber)`. The booking-to-seat relationship represents the seats currently assigned to a booking; cancellation releases those seats while the booking retains its `seatNumbers`.
+## Possible enhancements
 
-1. Login page
-2. Movie listing page
-3. Showtime selection
-4. Cinema seat selection
-5. Booking confirmation
-6. Concurrency demonstration
-
-## Challenges and Solutions
-
-TODO: Document challenges faced during the hackathon.
-
-Potential topics:
-- Microservice communication
-- MongoDB Atlas connectivity
-- JWT integration
-- Concurrent seat reservations
-- Docker configuration
-- Git merge conflicts
-
-## Future Enhancements
-
-- Online payment integration
-- Real-time seat availability using WebSockets
-- Booking confirmation emails
-- Reservation expiration
-- Advanced cinema management
-- Cloud deployment
+JWT authorization and user identity in Booking Service, React UI completion, WebSocket seat updates, email notifications, reservation timeouts, automated concurrent-request tests, API gateway, CI/CD, and cloud deployment.
