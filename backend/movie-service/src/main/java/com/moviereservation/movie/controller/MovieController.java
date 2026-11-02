@@ -29,21 +29,21 @@ public class MovieController {
         return service.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Movie> createMovie(@RequestBody MovieRequest request){
         Movie movie = service.createMovie(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(movie);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping
+//    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}")
     public Movie updateMovie(@PathVariable String id, @RequestBody MovieRequest request){
         return service.updateMovie(id, request);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping
+//    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMovie(@PathVariable String id){
         service.deleteMovie(id);
         return ResponseEntity.noContent().build();

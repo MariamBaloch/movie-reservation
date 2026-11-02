@@ -29,20 +29,20 @@ public class ScreenController {
         return service.findById(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Screen> createScreen(@RequestBody ScreenRequest request){
         Screen screen = service.createScreen(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(screen);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping
     public Screen updateScreen(@PathVariable String id, @RequestBody ScreenRequest request){
         return service.updateScreen(id, request);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping
     public ResponseEntity<Void> deleteScreen(@PathVariable String id){
         service.deleteScreen(id);
