@@ -44,7 +44,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      BOOKING_SERVICE_BASE_URL: http://booking-service:8083
+      BOOKING_SERVICE_URL: http://booking-service:8083
     restart: unless-stopped
 
   booking-service:

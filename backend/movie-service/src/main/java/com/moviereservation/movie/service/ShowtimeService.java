@@ -38,7 +38,12 @@ public class ShowtimeService {
         showtime.setStatus(ShowtimeStatus.PENDING);
         Showtime saved = showtimeRepository.save(showtime);
 
-        bookingServiceClient.initializeSeats(saved.getId(), seatNumbers);
+        try {
+            bookingServiceClient.initializeSeats(saved.getId(), seatNumbers);
+        } catch (RuntimeException e) {
+            showtimeRepository.deleteById(saved.getId());
+            throw e;
+        }
         saved.setStatus(ShowtimeStatus.SCHEDULED);
         saved = showtimeRepository.save(saved);
 
