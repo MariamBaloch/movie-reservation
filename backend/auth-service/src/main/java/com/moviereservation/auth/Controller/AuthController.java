@@ -1,5 +1,7 @@
 package com.moviereservation.auth.Controller;
 
+import com.moviereservation.auth.DTO.LoginRequest;
+import com.moviereservation.auth.DTO.LoginResponse;
 import com.moviereservation.auth.DTO.RegisterRequest;
 import com.moviereservation.auth.DTO.RegisterResponse;
 import com.moviereservation.auth.Service.AuthService;
@@ -29,4 +31,9 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        LoginResponse response = authService.login(loginRequest);
+        return ResponseEntity.ok(response);
+    }
 }
