@@ -1,4 +1,4 @@
-package com.moviereservation.booking.models;
+package com.moviereservation.booking.model;
 
 import com.moviereservation.booking.enums.BookingStatus;
 import lombok.*;
